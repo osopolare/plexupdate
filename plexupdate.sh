@@ -56,6 +56,7 @@ AUTOINSTALL=no
 AUTODELETE=no
 AUTOUPDATE=no
 AUTOSTART=no
+ROOTOVERRIDE=no
 
 # Sanity, make sure wget is in our path...
 wget >/dev/null 2>/dev/null
@@ -94,6 +95,7 @@ do
 	(-u) AUTOUPDATE=yes;;
 	(-U) AUTOUPDATE=no;;
 	(-s) AUTOSTART=yes;;
+	(-R) ROOTOVERRIDE=yes;;
 	(--) ;;
 	(-*) echo "Error: unrecognized option $1" 1>&2; exit 1;;
 	(*)  break;;
@@ -144,14 +146,15 @@ if [ "${EMAIL}" == "" -o "${PASS}" == "" ] && [ "${PUBLIC}" == "no" ]; then
 	exit 1
 fi
 
-if [ "${AUTOINSTALL}" == "yes" -o "${AUTOSTART}" == "yes" ]; then
-	id | grep 'uid=0(' 2>&1 >/dev/null
-	if [ $? -ne 0 ]; then
-		echo "Error: You need to be root to use autoinstall/autostart option."
-		exit 1
+if ! [ "${ROOTOVERRIDE}" ]; then
+	if [ "${AUTOINSTALL}" == "yes" -o "${AUTOSTART}" == "yes" ]; then
+		id | grep 'uid=0(' 2>&1 >/dev/null
+		if [ $? -ne 0 ]; then
+			echo "Error: You need to be root to use autoinstall/autostart option."
+			exit 1
+		fi
 	fi
 fi
-
 
 # Remove any ~ or other oddness in the path we're given
 DOWNLOADDIR="$(eval cd ${DOWNLOADDIR// /\\ } ; if [ $? -eq 0 ]; then pwd; fi)"
@@ -313,7 +316,7 @@ fi
 
 if [ "${AUTOINSTALL}" == "yes" ]; then
 	if [ "${REDHAT}" == "yes" ]; then
-		sudo yum -y install "${DOWNLOADDIR}/${FILENAME}"
+		sudo /usr/bin/yum -y install "${DOWNLOADDIR}/${FILENAME}"
 	else
 		sudo dpkg -i "${DOWNLOADDIR}/${FILENAME}"
 	fi
@@ -333,10 +336,10 @@ if [ "${AUTOSTART}" == "yes" ]; then
 		echo "The AUTOSTART [-s] option may not be needed on your distribution."
 	fi
 	# Check for systemd
-	if [ -f "/bin/systemctl" ]; then
-		systemctl start plexmediaserver.service
+	if [ -f "/usr/bin/systemctl" ]; then
+		sudo /usr/bin/systemctl start plexmediaserver.service
 	else
-		service plexmediaserver start
+		sudo service plexmediaserver start
 	fi
 fi
 
