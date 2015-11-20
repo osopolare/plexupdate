@@ -64,9 +64,13 @@ if [ $? -eq 127 ]; then
 	exit 1
 fi
 
-# Load settings from config file if it exists
-if [ -f ~/.plexupdate ]; then
-	source ~/.plexupdate
+# Load settings from config file if it exists.  First check /etc and if it's not there check this user's homedir.
+if [ -f /etc/plexupdate ] ; then
+	source /etc/plexupdate
+	else
+		if [ -f ~/.plexupdate ]; then
+		source ~/.plexupdate
+	fi
 fi
 
 # Current pages we need - Do not change unless Plex.tv changes again
